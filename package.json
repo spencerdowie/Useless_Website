@@ -11,6 +11,9 @@
     "dev": "npx vite"
   },
   "dependencies": {
+    "-": "^0.0.1",
+    "g": "^2.0.1",
+    "npm": "^11.16.0",
     "three": "^0.184.0"
   },
   "devDependencies": {

@@ -1,5 +1,9 @@
 import * as THREE from "three";
 import { AmmoPhysics } from "three/addons/physics/AmmoPhysics.js";
+import { MarchingCubes } from "three/addons/objects/MarchingCubes.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+import Stats from "three/addons/libs/stats.module.js";
 
 class Ball extends THREE.Mesh {
   constructor() {
@@ -14,8 +18,15 @@ class Ball extends THREE.Mesh {
 }
 
 let camera, scene, renderer;
-let controls;
+let controls, stats;
+let balls = [];
 let heldBall;
+let effect;
+
+let time = 0;
+
+const timer = new THREE.Timer();
+timer.connect(document);
 
 init();
 
@@ -30,12 +41,27 @@ function initGraphics() {
     70,
     window.innerWidth / window.innerHeight,
     0.1,
-    100
+    100,
   );
   camera.position.set(0, 2, 5);
   camera.lookAt(0, 0, 0);
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x404040);
+
+  effect = new MarchingCubes(
+    112,
+    new THREE.MeshPhongMaterial({ color: 0xff0000 }),
+    true,
+    true,
+    100000,
+  );
+  effect.position.set(0, 0, 0);
+  effect.scale.set(5, 5, 5);
+
+  effect.enableUvs = false;
+  effect.enableColors = false;
+
+  scene.add(effect);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -45,6 +71,13 @@ function initGraphics() {
 
   const ambientLight = new THREE.AmbientLight(0xffffff);
   scene.add(ambientLight);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+
+  // STATS
+
+  stats = new Stats();
+  document.body.appendChild(stats.dom);
 
   window.addEventListener("resize", onWindowResize);
 }
@@ -58,15 +91,15 @@ function initObjects() {
     let orgPos = new THREE.Object3D();
     orgPos.position.set(-2 + i, 3, 0);
 
-    let ball = new Ball();
-    ball.scale.set(0.5, 0.5, 0.5);
-    ball.position.x = -2 + i;
-    ball.name = "Ball " + i;
-    scene.add(ball);
+    balls[i] = new Ball();
+    balls[i].scale.set(0.5, 0.5, 0.5);
+    balls[i].position.x = -2 + i;
+    balls[i].name = "Ball " + i;
+    //scene.add(ball);
 
     let line = new THREE.Line(lineGeo, lineMat);
     line.position.x = -2 + i;
-    line.parent = ball;
+    line.parent = balls[i];
     scene.add(line);
   }
 
@@ -74,7 +107,7 @@ function initObjects() {
   const floorMat = new THREE.MeshPhongMaterial({ color: 0x20ff20 });
   let floor = new THREE.Mesh(floorGeo, floorMat);
   floor.rotation.x = -Math.PI / 2;
-  floor.position.y = -0.5;
+  floor.position.y = -1;
   scene.add(floor);
 }
 
@@ -82,7 +115,7 @@ function initInput() {
   window.addEventListener("mousedown", (e) => {
     let mouse = new THREE.Vector2(
       (e.clientX / window.innerWidth) * 2 - 1,
-      -(e.clientY / window.innerHeight) * 2 + 1
+      -(e.clientY / window.innerHeight) * 2 + 1,
     );
 
     let raycaster = new THREE.Raycaster();
@@ -111,5 +144,43 @@ function onWindowResize() {
 }
 
 function animate() {
+  timer.update();
+
+  const delta = timer.getDelta();
+
+  time += delta * 0.5;
+
+  updateCubes();
+
   renderer.render(scene, camera);
+  stats.update();
+}
+
+function updateCubes() {
+  effect.reset();
+  let xOff = 0.5,
+    yOff = 0.5,
+    zOff = 0.5;
+
+  for (let i = 0; i < balls.length; i++) {
+    let strength = 0.2;
+    let subtract = 12;
+    let xPos = balls[i].position.x * 0.1 + xOff;
+    let yPos = balls[i].position.y + yOff;
+    let zPos = balls[i].position.z + zOff;
+    effect.addBall(xPos, yPos, zPos, strength, subtract);
+    //console.log(zPos);
+  }
+
+  let animTime = ((time * 100).toFixed(0) % 20) / 2;
+  //console.log(animTime.toFixed(0) % 10);
+  for (let i = 0; i < 5; i++) {
+    let strength = 0.01;
+    let subtract = 1;
+    let xPos = balls[i].position.x * 0.1 + xOff;
+    let yPos = balls[i].position.y + yOff - animTime * 0.01;
+    let zPos = balls[i].position.z + zOff;
+    effect.addBall(xPos, yPos, zPos, strength, subtract);
+  }
+  effect.update();
 }
