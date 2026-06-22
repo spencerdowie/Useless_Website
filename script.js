@@ -11,7 +11,7 @@ class Ball extends THREE.Group {
 
     this.ball = new THREE.Mesh(
       new THREE.SphereGeometry(0.5),
-      new THREE.MeshPhongMaterial({ color: 0xffffff })
+      new THREE.MeshPhongMaterial({ color: 0xffffff }),
     );
     this.add(this.ball);
     this.ball.position.y = -3;
@@ -21,31 +21,31 @@ class Ball extends THREE.Group {
 
     this.line = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(points),
-      new THREE.LineBasicMaterial({ color: 0x000000 })
+      new THREE.LineBasicMaterial({ color: 0x000000 }),
     );
     this.add(this.line);
     this.line.position.y = -3;
     //this.setRotationFromEuler(new THREE.Euler(0, 0, -.75));
     this.position.set(-2 + i, 3, 0);
 
-    let transform = new Ammo.btTransform();
-    transform.setIdentity();
-    transform.setOrigin();
-    transform.setRotation();
-    let motionState = new Ammo.btDefaultMotionState(transform);
-    let colShape = new Ammo.btSphereShape(0, 5);
-    colShape.setMargin(0.05);
-    let localInertia = new Ammo.btVector(0, 0, 0);
-    colShape.calculateLocalInertia(MaskPass, localInertia);
-    let rbInfo = new btRigidBodyConstructionInfo(
-      1,
-      motionState,
-      colShape,
-      localInertia
-    );
-    let body = new Ammo.btRigidBody(rbInfo);
+    // let transform = new Ammo.btTransform();
+    // transform.setIdentity();
+    // transform.setOrigin();
+    // transform.setRotation();
+    // let motionState = new Ammo.btDefaultMotionState(transform);
+    // let colShape = new Ammo.btSphereShape(0, 5);
+    // colShape.setMargin(0.05);
+    // let localInertia = new Ammo.btVector(0, 0, 0);
+    // colShape.calculateLocalInertia(MaskPass, localInertia);
+    // let rbInfo = new btRigidBodyConstructionInfo(
+    //   1,
+    //   motionState,
+    //   colShape,
+    //   localInertia
+    // );
+    // let body = new Ammo.btRigidBody(rbInfo);
 
-    physics.addRigidBody(rbInfo);
+    // physics.addRigidBody(rbInfo);
   }
 
   onClick(e) {
@@ -62,22 +62,23 @@ let effect;
 const points = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 3, 0)];
 
 let time = 0;
+let speed = 8;
 
 const timer = new THREE.Timer();
 timer.connect(document);
 
-Ammo().then(function (AmmoLib) {
-  Ammo = AmmoLib;
+// Ammo().then(function (AmmoLib) {
+//   Ammo = AmmoLib;
 
-  init();
-  animate();
-});
+//   init();
+//   animate();
+// });
 
-//init();
+init();
 
 function init() {
   initGraphics();
-  initPhysics();
+  //initPhysics();
   initInput();
   initObjects();
 }
@@ -91,7 +92,7 @@ function initPhysics() {
     dispatcher,
     overlappingPairCache,
     solver,
-    collisionConfig
+    collisionConfig,
   );
   physics.setGravity(new Ammo.btVector3(0, -10, 0));
 }
@@ -101,7 +102,7 @@ function initGraphics() {
     70,
     window.innerWidth / window.innerHeight,
     0.1,
-    100
+    100,
   );
   camera.position.set(0, 2, 5);
   camera.lookAt(0, 0, 0);
@@ -113,10 +114,10 @@ function initGraphics() {
     new THREE.MeshPhongMaterial({ color: 0xff0000 }),
     true,
     true,
-    100000
+    100000,
   );
   effect.position.set(0, 0, 0);
-  effect.scale.set(5, 5, 5);
+  effect.scale.set(1,1,1);
 
   effect.enableUvs = false;
   effect.enableColors = false;
@@ -161,7 +162,7 @@ function initInput() {
   window.addEventListener("mousedown", (e) => {
     let mouse = new THREE.Vector2(
       (e.clientX / window.innerWidth) * 2 - 1,
-      -(e.clientY / window.innerHeight) * 2 + 1
+      -(e.clientY / window.innerHeight) * 2 + 1,
     );
 
     let raycaster = new THREE.Raycaster();
@@ -197,7 +198,8 @@ function animate() {
 
   time += delta * 0.5;
 
-  //updateCubes();
+  updateBalls();
+  updateCubes();
 
   renderer.render(scene, camera);
   stats.update();
@@ -233,4 +235,10 @@ function updateCubes() {
   //   effect.addBall(xPos, yPos, zPos, strength, subtract);
   // }
   effect.update();
+}
+
+function updateBalls() {
+  let rot = Math.sin(speed * time);
+  balls[0].rotation.z = rot < 0 ? rot : 0;
+  balls[4].rotation.z = rot > 0 ? rot : 0;
 }
