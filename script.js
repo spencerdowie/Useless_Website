@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { MarchingCubes } from "./MarchingCubes.js";
+import { MarchingCubes } from "three/addons/objects/MarchingCubes.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 import Stats from "three/addons/libs/stats.module.js";
