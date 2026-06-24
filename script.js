@@ -32,10 +32,6 @@ class Pendulum extends THREE.Group {
     this.position.set(-2 + i, 3, 0);
   }
 
-  onClick(e) {
-    console.log(this.name);
-  }
-
   getBallWorldPos() {
     return this.ball.getWorldPosition(new THREE.Vector3());
   }
@@ -45,7 +41,6 @@ let camera, scene, renderer;
 let controls, stats;
 let pendulums = [],
   balls = [];
-let heldBall;
 let effect;
 const points = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 3, 0)];
 
@@ -59,7 +54,6 @@ init();
 
 function init() {
   initGraphics();
-  initInput();
   initObjects();
 }
 
@@ -134,7 +128,6 @@ function initGraphics() {
   const controls = new OrbitControls(camera, renderer.domElement);
 
   // STATS
-
   stats = new Stats();
   document.body.appendChild(stats.dom);
 
@@ -161,33 +154,6 @@ function initObjects() {
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = -1;
   scene.add(floor);
-}
-
-function initInput() {
-  window.addEventListener("mousedown", (e) => {
-    let mouse = new THREE.Vector2(
-      (e.clientX / window.innerWidth) * 2 - 1,
-      -(e.clientY / window.innerHeight) * 2 + 1
-    );
-
-    let raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mouse, camera);
-
-    raycaster.intersectObjects(scene.children, true).forEach((hit) => {
-      if (hit.object.onClick) {
-        hit.object.onClick();
-        //console.log("Down " + hit.object.name);
-        heldBall = hit.object;
-      }
-    });
-  });
-
-  window.addEventListener("mouseup", (e) => {
-    if (heldBall != null) {
-      //console.log("Up " + heldBall.name);
-      heldBall = null;
-    }
-  });
 }
 
 function onWindowResize() {
@@ -219,9 +185,6 @@ function updateCubes() {
   for (let i = 0; i < balls.length; i++) {
     let strength = 0.2;
     let subtract = 12;
-    // let randX = randFloat(0, 0.002),
-    //   randY = randFloat(0, 0.002),
-    //   randZ = randFloat(0, 0.002);
     let randX = 0,
       randY = 0,
       randZ = 0;
@@ -233,16 +196,6 @@ function updateCubes() {
     //console.log(zPos);
   }
 
-  // let animTime = ((time * 100).toFixed(0) % 20) / 2;
-  // console.log(animTime.toFixed(0) % 10);
-  // for (let i = 0; i < 5; i++) {
-  //   let strength = 0.01;
-  //   let subtract = 1;
-  //   let xPos = balls[i].position.x * 0.1 + xOff;
-  //   let yPos = balls[i].position.y + yOff - animTime * 0.01;
-  //   let zPos = balls[i].position.z + zOff;
-  //   effect.addBall(xPos, yPos, zPos, strength, subtract);
-  // }
   effect.update();
 }
 
@@ -265,8 +218,6 @@ function updatePendulums(delta) {
     );
     //if (distance > 0) console.log(distance);
     balls[i].lerp(pendulumPos.add(offset), easeInOutCubic(distance));
-    // balls[i].position.x = pendulumPos.x;
-    // balls[i].position.y = pendulumPos.y;
   }
 }
 
