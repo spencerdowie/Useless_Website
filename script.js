@@ -10,8 +10,12 @@ class Pendulum extends THREE.Group {
     super();
 
     this.ball = new THREE.Mesh(
-      new THREE.SphereGeometry(0.5),
-      new THREE.MeshPhongMaterial({ color: 0xffffff })
+      new THREE.SphereGeometry(0.4),
+      new THREE.MeshPhongMaterial({
+        color: 0x880000,
+        specular: 0xffffff,
+        shininess: 50
+      })
     );
     this.add(this.ball);
     this.ball.position.y = -3;
@@ -31,17 +35,22 @@ class Pendulum extends THREE.Group {
   onClick(e) {
     console.log(this.name);
   }
+
+  getBallWorldPos() {
+    return this.ball.getWorldPosition(new THREE.Vector3());
+  }
 }
 
 let camera, scene, renderer;
 let controls, stats;
-let balls = [];
+let pendulums = [],
+  balls = [];
 let heldBall;
 let effect;
 const points = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 3, 0)];
 
 let time = 0;
-const speed = 6;
+const speed = 8;
 
 const timer = new THREE.Timer();
 timer.connect(document);
@@ -61,14 +70,38 @@ function initGraphics() {
     0.1,
     100
   );
-  camera.position.set(0, 2, 5);
+  camera.position.set(0, 3, 8);
   camera.lookAt(0, 0, 0);
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x404040);
 
+  const path = "textures/cube/Park2/";
+  const format = ".jpg";
+  const urls = [
+    path + "posx" + format,
+    path + "negx" + format,
+    path + "posy" + format,
+    path + "negy" + format,
+    path + "posz" + format,
+    path + "negz" + format
+  ];
+
+  const cubeTextureLoader = new THREE.CubeTextureLoader();
+
+  const reflectionCube = cubeTextureLoader.load(urls);
+  scene.background = reflectionCube;
+
   effect = new MarchingCubes(
     56,
-    new THREE.MeshPhongMaterial({ color: 0xff0000 }),
+    new THREE.MeshPhongMaterial({
+      color: 0xff0000,
+      transparent: true,
+      opacity: 0.8,
+      specular: 0xbb6666,
+      shininess: 50,
+      envMap: reflectionCube,
+      reflectivity: 0.8
+    }),
     true,
     true,
     100000
@@ -90,6 +123,14 @@ function initGraphics() {
   const ambientLight = new THREE.AmbientLight(0xffffff);
   scene.add(ambientLight);
 
+  const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.7);
+  directionalLight1.position.set(10, 5, -10);
+  scene.add(directionalLight1);
+
+  const directionalLight2 = new THREE.DirectionalLight(0xffffff, 1);
+  directionalLight2.position.set(-2, 0.5, 1);
+  scene.add(directionalLight2);
+
   const controls = new OrbitControls(camera, renderer.domElement);
 
   // STATS
@@ -102,14 +143,21 @@ function initGraphics() {
 
 function initObjects() {
   for (let i = 0; i < 5; i++) {
-    let pendulum = new Pendulum(i);
-    balls[i] = pendulum.ball;
-    scene.add(pendulum);
+    pendulums[i] = new Pendulum(i);
+    balls[i] = pendulums[i].getBallWorldPos();
+    scene.add(pendulums[i]);
   }
 
-  const floorGeo = new THREE.PlaneGeometry(12, 12);
-  const floorMat = new THREE.MeshPhongMaterial({ color: 0x20ff20 });
-  let floor = new THREE.Mesh(floorGeo, floorMat);
+  let floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(12, 12),
+    new THREE.MeshPhongMaterial({
+      color: 0x20ff20,
+      specular: 0xffffff,
+      shininess: 80,
+      transparent: true,
+      opacity: 0.35
+    })
+  );
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = -1;
   scene.add(floor);
@@ -151,12 +199,12 @@ function onWindowResize() {
 function animate() {
   timer.update();
 
-  const delta = timer.getDelta();
+  const delta = timer.getDelta() * 0.5;
 
-  time += delta * 0.5;
+  time += delta;
 
-  //updateCubes();
-  updatePendulums();
+  updateCubes();
+  updatePendulums(delta);
 
   renderer.render(scene, camera);
   stats.update();
@@ -171,12 +219,16 @@ function updateCubes() {
   for (let i = 0; i < balls.length; i++) {
     let strength = 0.2;
     let subtract = 12;
-    let randX = randFloat(0, 0.002),
-      randY = randFloat(0, 0.002),
-      randZ = randFloat(0, 0.002);
-    let xPos = balls[i].position.x * 0.1 + xOff + randX;
-    let yPos = balls[i].position.y + yOff + randY;
-    let zPos = balls[i].position.z + zOff + randZ;
+    // let randX = randFloat(0, 0.002),
+    //   randY = randFloat(0, 0.002),
+    //   randZ = randFloat(0, 0.002);
+    let randX = 0,
+      randY = 0,
+      randZ = 0;
+    let ballPosition = balls[i];
+    let xPos = ballPosition.x * 0.1 + xOff + randX;
+    let yPos = ballPosition.y * 0.1 + yOff + randY;
+    let zPos = ballPosition.z + zOff + randZ;
     effect.addBall(xPos, yPos, zPos, strength, subtract);
     //console.log(zPos);
   }
@@ -194,12 +246,31 @@ function updateCubes() {
   effect.update();
 }
 
-function updatePendulums() {
+function updatePendulums(delta) {
   let angle = Math.sin(time * speed);
   //console.log(angle);
   if (angle < 0) {
-    balls[0].parent.rotation.z = angle;
+    pendulums[0].rotation.z = angle;
   } else {
-    balls[4].parent.rotation.z = angle;
+    pendulums[4].rotation.z = angle;
   }
+  for (let i = 0; i < pendulums.length; i++) {
+    let pendulumPos = pendulums[i].getBallWorldPos();
+    let offset = new THREE.Vector3(1, 1, 1).multiplyScalar(randFloat(0, 0.005));
+    //console.log(offset.add(pendulumPos));
+    let distance = THREE.MathUtils.clamp(
+      balls[i].distanceTo(pendulumPos) * 5.5,
+      0,
+      1
+    );
+    //if (distance > 0) console.log(distance);
+    balls[i].lerp(pendulumPos.add(offset), easeInOutCubic(distance));
+    // balls[i].position.x = pendulumPos.x;
+    // balls[i].position.y = pendulumPos.y;
+  }
+}
+
+//from https://easings.net/#easeInOutCubic
+function easeInOutCubic(x) {
+  return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 }
