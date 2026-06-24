@@ -5,7 +5,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import Stats from "three/addons/libs/stats.module.js";
 import { randFloat } from "three/src/math/MathUtils.js";
 
-class Ball extends THREE.Group {
+class Pendulum extends THREE.Group {
   constructor(i) {
     super();
 
@@ -25,36 +25,15 @@ class Ball extends THREE.Group {
     );
     this.add(this.line);
     this.line.position.y = -3;
-    //this.setRotationFromEuler(new THREE.Euler(0, 0, -.75));
     this.position.set(-2 + i, 3, 0);
-
-    let transform = new Ammo.btTransform();
-    transform.setIdentity();
-    transform.setOrigin();
-    transform.setRotation();
-    let motionState = new Ammo.btDefaultMotionState(transform);
-    let colShape = new Ammo.btSphereShape(0, 5);
-    colShape.setMargin(0.05);
-    let localInertia = new Ammo.btVector(0, 0, 0);
-    colShape.calculateLocalInertia(MaskPass, localInertia);
-    let rbInfo = new btRigidBodyConstructionInfo(
-      1,
-      motionState,
-      colShape,
-      localInertia
-    );
-    let body = new Ammo.btRigidBody(rbInfo);
-
-    physics.addRigidBody(rbInfo);
   }
 
   onClick(e) {
     console.log(this.name);
-    this.setRotationFromEuler(new THREE.Euler(0, 0, -0.75));
   }
 }
 
-let camera, scene, renderer, physics;
+let camera, scene, renderer;
 let controls, stats;
 let balls = [];
 let heldBall;
@@ -62,38 +41,17 @@ let effect;
 const points = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 3, 0)];
 
 let time = 0;
+const speed = 6;
 
 const timer = new THREE.Timer();
 timer.connect(document);
 
-Ammo().then(function (AmmoLib) {
-  Ammo = AmmoLib;
-
-  init();
-  animate();
-});
-
-//init();
+init();
 
 function init() {
   initGraphics();
-  initPhysics();
   initInput();
   initObjects();
-}
-
-function initPhysics() {
-  const collisionConfig = new Ammo.btDefaultCollisionConfiguration();
-  const dispatcher = new Ammo.btCollisionDispatcher(collisionConfig);
-  const overlappingPairCache = new Ammo.btDbvtBroadphase();
-  const solver = new Ammo.btSequentialImpulseConstraintSolver();
-  physics = new Ammo.btDiscreteDynamicsWorld(
-    dispatcher,
-    overlappingPairCache,
-    solver,
-    collisionConfig
-  );
-  physics.setGravity(new Ammo.btVector3(0, -10, 0));
 }
 
 function initGraphics() {
@@ -144,9 +102,9 @@ function initGraphics() {
 
 function initObjects() {
   for (let i = 0; i < 5; i++) {
-    let ball = new Ball(i);
-    balls[i] = ball;
-    scene.add(ball);
+    let pendulum = new Pendulum(i);
+    balls[i] = pendulum.ball;
+    scene.add(pendulum);
   }
 
   const floorGeo = new THREE.PlaneGeometry(12, 12);
@@ -198,6 +156,7 @@ function animate() {
   time += delta * 0.5;
 
   //updateCubes();
+  updatePendulums();
 
   renderer.render(scene, camera);
   stats.update();
@@ -233,4 +192,14 @@ function updateCubes() {
   //   effect.addBall(xPos, yPos, zPos, strength, subtract);
   // }
   effect.update();
+}
+
+function updatePendulums() {
+  let angle = Math.sin(time * speed);
+  //console.log(angle);
+  if (angle < 0) {
+    balls[0].parent.rotation.z = angle;
+  } else {
+    balls[4].parent.rotation.z = angle;
+  }
 }
